@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.udong.model.dao.PlaceDao">
+	<resultMap type="Place" id="placeMap">
+		<result column="place_id" property="placeId"/>
+		<result column="place_name" property="placeName"/>
+		<result column="eq_year" property="eqYear"/>
+		<result column="address_gu" property="addressGu"/>
+		<result column="address_dong" property="addressDong"/>
+		<result column="address_detail" property="addressDetail"/>
+		<result column="eq_kind" property="eqKind"/>
+		<result column="eq_broken" property="eqBroken"/>
+		<result column="eq_fix" property="eqFix"/>
+		<result column="dept_phone" property="deptPhone"/>
+		<result column="update_date" property="updateDate"/>
+	</resultMap>
+
+	<!-- API 호출 후 DB에 데이터 저장 -->
+	<insert id="insertPlace" parameterType="Place" keyProperty="placeId" useGeneratedKeys="true">
+		INSERT INTO place (place_name, eq_year, address, address_gu, address_dong, address_detail, eq_kind, eq_broken, eq_fix, latitude, longitude, dept, dept_phone, update_date)
+		VALUES (#{placeName}, #{eqYear}, #{address},#{addressGu},#{addressDong}, #{addressDetail}, #{eqKind}, #{eqBroken}, #{eqFix}, #{latitude}, #{longitude}, #{dept}, #{deptPhone}, #{updateDate})
+	</insert>
+	
+	
+	<!-- 장소 목록 조회 -->
+	<select id="getPlaces" resultMap="placeMap">
+		SELECT *
+		FROM place
+	</select>
+	
+	<!-- 상세 장소 조회 -->
+	<select id="getPlaceById" parameterType="int" resultMap="placeMap">
+		SELECT *
+		FROM place
+		WHERE place_id = #{placeId}
+	</select>
+	
+	<!-- 검색기능  -->
+	<select id="search" resultMap="placeMap" parameterType="SearchCondition">
+		SELECT *
+		FROM place
+		<!-- 검색 조건 (동적쿼리)-->
+		<if test="key != 'none'">
+			WHERE ${key} LIKE concat('%', #{word}, '%')
+		</if>
+		<!-- 어떤 기준으로 어떤 방향으로 정렬 -->
+		<if test="orderBy != 'none'">
+			ORDER BY ${orderBy} ${orderByDir}
+		</if>
+	</select>
+	
+		<!-- 부위 별 검색기능  -->
+	<select id="searchByPart" resultMap="placeMap" parameterType="SearchCondition">
+		SELECT *
+		FROM place
+		<!-- 검색 조건 (동적쿼리)-->
+		<if test="key != 'none'">
+			WHERE ${key} LIKE concat('%', #{word}, '%')
+		</if>
+		<!-- 어떤 기준으로 어떤 방향으로 정렬 -->
+		<if test="orderBy != 'none'">
+			ORDER BY ${orderBy} ${orderByDir}
+		</if>
+	</select>
+	
+	<!-- 가까운 곳 4곳 조회 -->
+	<!-- Haversine 공식 사용 -->
+	<select id="findNearPlaces" resultMap="placeMap">
+		SELECT *, ROUND((6371 * ACOS(COS(RADIANS(#{latitude})) * COS(RADIANS(latitude)) * COS(RADIANS(longitude)-RADIANS(#{longitude})) + SIN(RADIANS(#{latitude}))*SIN(RADIANS(latitude)))),3) as distance
+		FROM place 
+		ORDER BY (6371 * ACOS(COS(RADIANS(#{latitude})) * COS(RADIANS(latitude)) * COS(RADIANS(longitude)-RADIANS(#{longitude})) + SIN(RADIANS(#{latitude}))*SIN(RADIANS(latitude)))) 
+		LIMIT 4
+	</select>
+</mapper>
